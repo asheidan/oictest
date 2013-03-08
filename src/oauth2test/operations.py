@@ -44,11 +44,9 @@ class AccessTokenSecondResponse(AccessTokenResponse):
 
 
 class AuthorizationRequestCodeWithState(AuthorizationRequestCode):
+    _request_args = AuthorizationRequestCode._request_args.copy()
+    _request_args["state"] = "afdsliLKJ253oiuffaslkj"
 
-    def __init__(self, conv=None):
-        super(AuthorizationRequestCodeWithState, self).__init__(conv)
-
-        self.request_args["state"] = "afdsliLKJ253oiuffaslkj"
 
 class AuthorizationResponseWhichForcesState(AuthorizationResponse):
     tests = {"post": [CheckPresenceOfStateParameter]}
