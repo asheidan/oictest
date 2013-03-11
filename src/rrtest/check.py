@@ -98,6 +98,13 @@ class ResponseInfo(Information):
         return {}
 
 
+class CheckAnyResponse(Check):
+    """
+    Is agnostic regarding the response, can be used to create tests that ensures
+    that a certain condition hasn't happened.
+    """
+    pass
+
 class CheckErrorResponse(ExpectedError):
     """
     Checks that the HTTP response status is outside the 200 or 300 range

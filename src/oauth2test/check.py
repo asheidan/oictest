@@ -1,5 +1,6 @@
 from rrtest import check
 from rrtest.check import CONT_JSON
+from rrtest.check import CheckAnyResponse
 from rrtest.check import CheckErrorResponse
 from rrtest.check import CRITICAL
 from rrtest.check import OK
@@ -59,6 +60,8 @@ class CheckContentTypeHeader(Error):
                 else:
                     self._status = self.status
                     self._message = "Wrong content type: %s" % ctype
+            elif conv.response_spec.ctype == "unknown":
+                pass
             else:  # has to be uuencoded
                 if not "application/x-www-form-urlencoded" in ctype:
                     self._status = self.status
@@ -103,6 +106,7 @@ class CheckPresenceOfStateParameter(Error):
 
 
 class CheckErrorResponseForInvalidType(CheckErrorResponse):
+    cid = "check_correct_error_on_invalid_type"
     status = check.ERROR
 
     def _func(self, conv):
@@ -114,6 +118,26 @@ class CheckErrorResponseForInvalidType(CheckErrorResponse):
             if self.err["error"] != expected_value:
                 self._status = self.status
                 self._message = 'The error parameter should be "%s"' % expected_value
+
+        return res
+
+
+class CheckErrorResponseForInvalidRedirect(CheckAnyResponse):
+    """ Makes sure that the user agent isn't redirected to invalid uri
+    """
+    cid = "check_correct_error_on_invalid_redirect"
+    status = check.ERROR
+
+    def _func(self, conv):
+        res = super(CheckErrorResponseForInvalidRedirect, self)._func(conv)
+        
+        response = conv.last_response
+
+        if response.status_code in range(301,303):
+            url = response.headers["location"]
+            if url.startswith("http://localhost/invalid_xxxxxxxxxxxxxxxx"):
+                self._status = self.status
+                self._message = "Authorization provider MUST NOT redirect to faulty redirect_uri"
 
         return res
 
