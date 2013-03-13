@@ -72,20 +72,29 @@ class AuthorizationInvalidRedirectURIResponse(Response):
     tests = {}
 
     def from_unknown(self, *args, **kwargs):
-        print "Deserializing"
         pass
 
 
 class AccessTokenInvalidTypeRequest(AccessTokenRequest):
     tests = {"post": [VerifyError]}
-
-    def __init__(self, conv):
-        super(AccessTokenInvalidTypeRequest, self).__init__(conv)
-
-        self.request_args["grant_type"] = 'nissesapa'
+    _request_args = AccessTokenRequest._request_args.copy()
+    _request_args["grant_type"] = 'nissesapa'
 
 class AccessTokenInvalidTypeResponse(ErrorResponse):
     tests = {"post": [CheckErrorResponseForInvalidType]}
+
+
+class AuthorizationRequest2ndValidRedirectURI(AuthorizationRequestCode):
+    """ Does a authorization code request. Used as a precursor to the second
+        step which tries to request an access token with a different
+        redirect_uri.
+    """
+    _request_args = AuthorizationRequestCode._request_args.copy()
+    _request_args['redirect_uri'] = 'http://localhost:8081/second_valid'
+
+class AccessTokenRequest1stValidRedirectURI(AccessTokenRequest):
+    _request_args = AccessTokenRequest._request_args.copy()
+    _request_args['redirect_uri'] = 'http://localhost:8081/'
 
 
 PHASES = {
@@ -97,8 +106,12 @@ PHASES = {
                 AuthorizationResponseWhichForcesState),
     "login-with-invalid-redirect": (AuthorizationRequestInvalidRedirectURI,
                 AuthorizationInvalidRedirectURIResponse),
+    "login-with-2ndvalid-redirect": (AuthorizationRequest2ndValidRedirectURI,
+                AuthorizationResponse),
     "access-token-request-invalid-type": (AccessTokenInvalidTypeRequest,
                         AccessTokenInvalidTypeResponse),
+    "access-token-request-1stvalid-uri": (AccessTokenRequest1stValidRedirectURI,
+                AccessTokenResponse),
 }
 
 
@@ -141,7 +154,9 @@ FLOWS = {
     },
     'code-verifies-redirect': {
         'name': 'Basic Code flow testing that the user agent isnt redirected to a faulty url',
-        'descr': (''),
+        'descr': ('Basic test which tries to authenticate with a faulty',
+                  'redirect_uri and makes sure that the user agent isnt',
+                  'redirected to the faulty uri'),
         # Should also check that the user is informed of the error, but that
         # isn't possible,
         'sequence': ["login-with-invalid-redirect"]
@@ -152,5 +167,12 @@ FLOWS = {
                   'correctly indicates faulty values for the grant_type',
                   'parameter.'),
         'sequence': ['login', 'access-token-request-invalid-type'],
+    },
+    'code-different-redirect': {
+        'name': 'Basic Code flow with different redirect_uri parameters',
+        'descr': ("Uses a redirect which isn't the default but still valid.",
+                  "Makes access token request with a different valid uri."),
+        'sequence': ['login-with-2ndvalid-redirect',
+            'access-token-request-1stvalid-uri'],
     },
 }
